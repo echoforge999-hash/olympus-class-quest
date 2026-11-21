@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Olympus Class Quest</title>
+<style>
+:root{
+  --bg:#f6f1e7; --ink:#1f2a44; --muted:#5b6475; --card:#fffdf8; --line:#e2d8c3; --gold:#d4a017; --accent:#2f5d8a;
+  --a:#e4572e; --b:#2e86ab; --c:#f2a541; --d:#3bb273; --ok:#2e9e5b; --bad:#c0392b;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Segoe UI",system-ui,-apple-system,sans-serif;min-height:100vh}
+header{display:flex;align-items:center;justify-content:space-between;padding:14px 22px;border-bottom:2px solid var(--line);background:var(--card)}
+header h1{margin:0;font-size:22px;letter-spacing:.5px}
+header h1 span{color:var(--gold)}
+main{max-width:1100px;margin:0 auto;padding:22px}
+button{font:inherit;cursor:pointer;border:0;border-radius:10px;padding:10px 16px;background:var(--accent);color:#fff;font-weight:600}
+button.ghost{background:transparent;color:var(--accent);border:2px solid var(--accent)}
+button:disabled{opacity:.45;cursor:not-allowed}
+.card{background:var(--card);border:2px solid var(--line);border-radius:16px;padding:20px;margin-bottom:18px}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+label{font-weight:600;font-size:14px;color:var(--muted)}
+input,select,textarea{font:inherit;padding:9px 11px;border:2px solid var(--line);border-radius:9px;background:#fff;color:var(--ink)}
+textarea{width:100%;min-height:150px;font-family:Consolas,monospace;font-size:13px}
+.teamchips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{border:3px solid var(--line);border-radius:14px;padding:10px 12px;background:#fff;min-width:150px;position:relative}
+.chip .nm{font-weight:700}
+.chip .sc{font-size:13px;color:var(--muted)}
+.chip .ans{display:flex;gap:5px;margin-top:8px}
+.chip .ans button{padding:6px 0;width:32px;border-radius:7px;background:#eee;color:#333}
+.chip .ans button.on{color:#fff}
+.chip .ans button.on.A{background:var(--a)}.chip .ans button.on.B{background:var(--b)}.chip .ans button.on.C{background:var(--c)}.chip .ans button.on.D{background:var(--d)}
+.chip .help{position:absolute;top:6px;right:8px;background:none;color:var(--muted);padding:2px 4px;font-size:18px}
+.chip.helped{border-color:var(--gold)}
+.q{font-size:30px;font-weight:700;line-height:1.25;margin:4px 0 18px}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.opt{border-radius:14px;padding:18px;color:#fff;font-size:22px;font-weight:700;display:flex;gap:12px;align-items:center;min-height:76px}
+.opt .l{background:rgba(255,255,255,.25);border-radius:8px;padding:2px 10px}
+.opt.dim{opacity:.3}
+.opt.right{outline:5px solid var(--ok);outline-offset:3px}
+.A{background:var(--a)}.B{background:var(--b)}.C{background:var(--c)}.D{background:var(--d)}
+.timer{height:10px;background:#eadfca;border-radius:6px;overflow:hidden;margin:6px 0 16px}
+.timer div{height:100%;background:var(--gold);transition:width .25s linear}
+.meta{display:flex;justify-content:space-between;color:var(--muted);font-weight:600}
+.temple svg{width:100%;height:auto;display:block}
+.small{font-size:13px;color:var(--muted)}
+.big{font-size:42px;font-weight:800}
+.podium{display:flex;gap:14px;align-items:flex-end;justify-content:center;margin:16px 0}
+.podium div{background:var(--accent);color:#fff;border-radius:12px 12px 0 0;width:150px;text-align:center;padding:10px;font-weight:700}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 18px;border-radius:12px;font-weight:600;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
+#cards{display:none}
+@media print{
+  header,main,.toast{display:none!important}
+  #cards{display:block}
+  .pc{page-break-after:always;height:95vh;display:flex;align-items:center;justify-content:center;font-size:60vh;font-weight:900;color:#fff;border-radius:30px}
+}
+@media (max-width:760px){.grid2,.opts{grid-template-columns:1fr}.q{font-size:22px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>⚡ Olympus <span>Class Quest</span></h1>
+  <div class="row">
+    <button class="ghost" id="btnCards" title="Print A/B/C/D answer cards for the teams">🖨 Answer cards</button>
+    <button class="ghost" id="btnHome">⌂ Setup</button>
+  </div>
+</header>
+<main id="app"></main>
+<div id="cards"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+// ---------------- default question set: Greek & Roman mythology + first Latin words ----------------
+const DEFAULT_SET = `Who is the king of the Greek gods? | Zeus | Hades | Apollo | Ares
+What is the Roman name of Ares, the god of war? | Mars | Mercury | Neptune | Vulcan
+Which goddess of wisdom gave her name to Athens? | Athena | Hera | Artemis | Demeter
+What is the Roman name of Aphrodite? | Venus | Juno | Minerva | Diana
+Which messenger god wears winged sandals? | Hermes | Hephaestus | Dionysus | Ares
+Who rules the sea with a trident? | Poseidon | Zeus | Hades | Apollo
+Which hero cut off the head of Medusa? | Perseus | Theseus | Jason | Achilles
+Who had to complete twelve labours? | Heracles | Odysseus | Perseus | Orpheus
+What does the Latin word "aqua" mean? | water | air | fire | stone
+What does the Latin word "amicus" mean? | friend | enemy | teacher | brother
+What is the name of the three-headed dog of the underworld? | Cerberus | Pegasus | Minotaur | Hydra
+Who flew too close to the sun on wings of wax? | Icarus | Daedalus | Phaethon | Hermes
+What does the Latin word "terra" mean? | earth | sky | sea | star
+Which goddess of the harvest is the mother of Persephone? | Demeter | Hera | Hestia | Athena
+What is the Roman name of Hermes? | Mercury | Mars | Saturn | Jupiter
+Which island was Odysseus trying to get home to? | Ithaca | Crete | Rhodes | Sicily
+What does the Latin word "rex" mean? | king | law | road | river
+Hephaestus is the god of… | fire and the forge | the sea | wine | the hunt
+Who is the twin sister of Apollo? | Artemis | Athena | Aphrodite | Persephone
+Who opened a jar and let all the troubles out into the world? | Pandora | Medusa | Helen | Ariadne
+What does the Latin word "puella" mean? | girl | boy | mother | city
+Which hero defeated the Minotaur in the labyrinth? | Theseus | Perseus | Heracles | Jason
+What is the Roman name of Hera, the queen of the gods? | Juno | Venus | Diana | Ceres
+What does the Latin word "bellum" mean? | war | beauty | bell | peace
+On which mountain do the Greek gods live? | Olympus | Etna | Vesuvius | Parnassus
+Which Titan stole fire and gave it to humans? | Prometheus | Atlas | Cronus | Hyperion
+What does the Latin word "lux" mean? | light | luck | wolf | law
+Who rules the underworld? | Hades | Poseidon | Ares | Apollo
+Which hero sailed with the Argonauts for the Golden Fleece? | Jason | Achilles | Odysseus | Perseus
+What does the Latin word "mater" mean? | mother | matter | sea | master`;
+
+const GODS = ['Team Zeus','Team Athena','Team Poseidon','Team Artemis','Team Hermes','Team Apollo'];
+const TEAM_COL = ['#7b2cbf','#2f5d8a','#0f9d8a','#c2185b','#e07a00','#5d4037'];
+const LET = ['A','B','C','D'];
+
+// ---------------- state (kept only in this browser, no personal data) ----------------
+const S = {
+  screen:'setup', teams:[], questions:[], qi:0, perm:[], answers:{}, helps:{}, revealed:false,
+  time:20, left:20, timerId:null, bricks:0, goal:0, setText:DEFAULT_SET, nTeams:4, kindness:{}
+};
+const store = {
+  get(k,d){ try{ const v=localStorage.getItem(k); return v===null?d:JSON.parse(v);}catch(e){return d;} },
+  set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+};
+S.setText = store.get('oq_set', DEFAULT_SET);
+
+const $ = s => document.querySelector(s);
+const app = $('#app');
+function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function toast(m){ const t=$('#toast'); t.textContent=m; t.classList.add('show'); clearTimeout(toast.id); toast.id=setTimeout(()=>t.classList.remove('show'),2200); }
+function shuffle(a){ a=[...a]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+function parseSet(txt){
+  return txt.split(/\r?\n/).map(l=>l.trim()).filter(l=>l && !l.startsWith('#')).map(l=>l.split('|').map(x=>x.trim()))
+    .filter(p=>p.length>=3 && p.every(Boolean)).map(p=>({q:p[0], right:p[1], opts:p.slice(1,5)}));
+}
+
+// ---------------- sound ----------------
+let ac=null;
+function beep(f,d,type='sine',v=.08,w=0){ try{ ac=ac||new (window.AudioContext||window.webkitAudioContext)(); const o=ac.createOscillator(),g=ac.createGain(),t0=ac.currentTime+w;
+  o.type=type;o.frequency.value=f;g.gain.setValueAtTime(v,t0);g.gain.exponentialRampToValueAtTime(.0001,t0+d);o.connect(g).connect(ac.destination);o.start(t0);o.stop(t0+d);}catch(e){} }
+const sfx={ reveal(){[523,659,784].forEach((f,i)=>beep(f,.25,'triangle',.08,i*.08));}, tick(){beep(880,.05,'square',.03);}, brick(){beep(330,.12,'triangle',.07);beep(495,.12,'triangle',.05,.05);},
+  win(){[523,659,784,1046,784,1046].forEach((f,i)=>beep(f,.3,'triangle',.08,i*.14));} };
+
+// ---------------- screens ----------------
+function render(){ ({setup:renderSetup, play:renderPlay, end:renderEnd})[S.screen](); }
+
+function renderSetup(){
+  const qs = parseSet(S.setText);
+  app.innerHTML = `
+  <div class="card">
+    <h2 style="margin-top:0">A quiz the whole class wins together</h2>
+    <p>Split the class into teams and project this screen on the board. Teams discuss each question and hold up their A/B/C/D card (print them with <b>🖨 Answer cards</b>). The teacher clicks each team's answer, then reveals.</p>
+    <p>Every correct answer from <b>any</b> team adds a stone to the <b>Temple of Olympus</b>. Teams compete for points, but the temple can only be finished if the whole class learns together. Stuck? A team can press <b>🤝</b> to ask another team for help once per game. If the answer is right, both teams score, and the helpers earn a <b>Kindness</b> star.</p>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <label>Number of teams</label>
+      <div class="row" style="margin:8px 0 14px">${[2,3,4,5,6].map(n=>`<button class="${n===S.nTeams?'':'ghost'}" data-n="${n}">${n}</button>`).join('')}</div>
+      <div id="teamNames">${Array.from({length:S.nTeams},(_,i)=>`<div class="row" style="margin-bottom:8px"><span style="width:14px;height:14px;border-radius:50%;background:${TEAM_COL[i]}"></span><input data-t="${i}" value="${esc((S.teams[i]&&S.teams[i].name)||GODS[i])}" maxlength="24"></div>`).join('')}</div>
+      <label>Seconds per question</label>
+      <div class="row" style="margin-top:8px"><select id="secs">${[10,15,20,30,45,60].map(s=>`<option ${s===S.time?'selected':''}>${s}</option>`).join('')}</select></div>
+    </div>
+    <div class="card">
+      <label>Questions (${qs.length} ready). One per line: <code>question | right answer | wrong | wrong | wrong</code></label>
+      <textarea id="set">${esc(S.setText)}</textarea>
+      <div class="row" style="margin-top:8px">
+        <button class="ghost" id="resetSet">Default set: Greek &amp; Roman myths + Latin words</button>
+        <span class="small">Teachers can paste any subject here. It is saved only in this browser.</span>
+      </div>
+    </div>
+  </div>
+  <div class="row"><button id="go" style="font-size:20px;padding:14px 26px" ${qs.length<1?'disabled':''}>Start the quest ⚡</button>
+  <span class="small">${Math.min(qs.length,15)} questions per game · works offline · no accounts, no student data collected</span></div>`;
+  app.querySelectorAll('[data-n]').forEach(b=>b.onclick=()=>{ saveNames(); S.nTeams=+b.dataset.n; render(); });
+  $('#set').oninput = e => { S.setText = e.target.value; store.set('oq_set', S.setText); };
+  $('#resetSet').onclick = () => { S.setText = DEFAULT_SET; store.set('oq_set', S.setText); render(); };
+  $('#secs').onchange = e => S.time = +e.target.value;
+  $('#go').onclick = startGame;
+}
+function saveNames(){ app.querySelectorAll('[data-t]').forEach(inp=>{ const i=+inp.dataset.t; S.teams[i]={name:inp.value.trim()||GODS[i]}; }); }
+
+function startGame(){
+  saveNames();
+  const qs = shuffle(parseSet(S.setText)).slice(0,15);
+  S.questions = qs.map(q=>({...q, shown: shuffle(q.opts)}));
+  S.teams = Array.from({length:S.nTeams},(_,i)=>({name:(S.teams[i]&&S.teams[i].name)||GODS[i], score:0, helpUsed:false, kind:0, correct:0, col:TEAM_COL[i]}));
+  S.qi = 0; S.bricks = 0; S.goal = Math.ceil(S.questions.length * S.teams.length * 0.6);
+  S.screen = 'play'; newQuestion();
+}
+function newQuestion(){
+  S.answers = {}; S.helps = {}; S.revealed = false; S.left = S.time;
+  clearInterval(S.timerId);
+  S.timerId = setInterval(()=>{ if (S.revealed) return; S.left--; if (S.left<=5 && S.left>0) sfx.tick(); if (S.left<=0){ clearInterval(S.timerId); } updateTimer(); }, 1000);
+  render();
+}
+function updateTimer(){ const el=$('#tbar'); if(el) el.style.width = Math.max(0, S.left/S.time*100)+'%'; const n=$('#tnum'); if(n) n.textContent = S.left>0 ? S.left+'s' : 'Time!'; }
+
+function templeSVG(){
+  const cols = 10, total = S.goal, done = Math.min(S.bricks, total);
+  const perCol = total/cols;
+  let s = `<svg viewBox="0 0 420 210" role="img" aria-label="Temple of Olympus: ${done} of ${total} stones">`;
+  s += `<rect x="0" y="0" width="420" height="210" fill="#e9f2fb" rx="12"/>`;
+  s += `<polygon points="20,70 210,14 400,70" fill="${done>=total?'#d4a017':'#ece4d2'}" stroke="#bfae8a" stroke-width="2"/>`;
+  s += `<rect x="24" y="70" width="372" height="12" fill="#e0d4b8"/>`;
+  for (let c=0;c<cols;c++){
+    const x = 36 + c*36, filled = Math.max(0, Math.min(perCol, done - c*perCol));
+    s += `<rect x="${x}" y="84" width="22" height="100" fill="#f3eee2" stroke="#d6caa8" stroke-dasharray="3 3"/>`;
+    const h = 100*filled/perCol;
+    if (h>0) s += `<rect x="${x}" y="${184-h}" width="22" height="${h}" fill="#fbf7ee" stroke="#a8956a"/>`;
+  }
+  s += `<rect x="16" y="184" width="388" height="14" fill="#d9cba6"/>`;
+  s += `<text x="210" y="56" text-anchor="middle" font-size="15" font-weight="700" fill="#1f2a44">${done} / ${total}</text></svg>`;
+  return s;
+}
+
+function renderPlay(){
+  const q = S.questions[S.qi];
+  const rightIdx = q.shown.indexOf(q.right);
+  app.innerHTML = `
+  <div class="meta"><span>Question ${S.qi+1} / ${S.questions.length}</span><span id="tnum">${S.left>0?S.left+'s':'Time!'}</span></div>
+  <div class="timer"><div id="tbar" style="width:${S.left/S.time*100}%"></div></div>
+  <div class="q">${esc(q.q)}</div>
+  <div class="opts">${q.shown.map((o,i)=>`<div class="opt ${LET[i]} ${S.revealed&&i!==rightIdx?'dim':''} ${S.revealed&&i===rightIdx?'right':''}"><span class="l">${LET[i]}</span>${esc(o)}</div>`).join('')}</div>
+  <div class="grid2" style="margin-top:18px">
+    <div class="card">
+      <div class="row" style="justify-content:space-between;margin-bottom:10px"><b>Teams: click the answer each team holds up</b><span class="small">🤝 = ask a team for help (once per game)</span></div>
+      <div class="teamchips">${S.teams.map((t,i)=>{
+        const a=S.answers[i], hp=S.helps[i];
+        const res = S.revealed ? (a===rightIdx ? ' ✅' : ' ❌') : '';
+        return `<div class="chip ${hp!==undefined?'helped':''}" style="border-left:8px solid ${t.col}">
+          ${!t.helpUsed && !S.revealed ? `<button class="help" data-help="${i}" title="Ask another team for help">🤝</button>`:''}
+          <div class="nm">${esc(t.name)}${res}</div>
+          <div class="sc">${t.score} pts · ⭐ ${t.kind}${hp!==undefined?` · helped by ${esc(S.teams[hp].name)}`:''}</div>
+          <div class="ans">${LET.map((L,k)=>`<button data-team="${i}" data-a="${k}" class="${a===k?'on '+L:''}" ${S.revealed?'disabled':''}>${L}</button>`).join('')}</div>
+        </div>`;}).join('')}</div>
+      <div id="helpPick"></div>
+    </div>
+    <div class="card temple"><b>Temple of Olympus</b> <span class="small">· the class builds it together</span>${templeSVG()}</div>
+  </div>
+  <div class="row">${S.revealed
+     ? `<button id="next" style="font-size:18px">${S.qi+1<S.questions.length?'Next question →':'See the results 🏛'}</button>`
+     : `<button id="reveal" style="font-size:18px">Reveal answer</button>`}</div>`;
+  app.querySelectorAll('[data-team]').forEach(b=>b.onclick=()=>{ S.answers[+b.dataset.team]=+b.dataset.a; render(); });
+  app.querySelectorAll('[data-help]').forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.help;
+    $('#helpPick').innerHTML = `<p class="small" style="margin:12px 0 6px">Which team helps <b>${esc(S.teams[i].name)}</b>?</p><div class="row">${S.teams.map((t,k)=>k===i?'':`<button class="ghost" data-pick="${k}">${esc(t.name)}</button>`).join('')}<button class="ghost" data-pick="-1">Cancel</button></div>`;
+    app.querySelectorAll('[data-pick]').forEach(p=>p.onclick=()=>{ const k=+p.dataset.pick; if(k>=0){ S.helps[i]=k; S.teams[i].helpUsed=true; toast(`${S.teams[k].name} is helping ${S.teams[i].name} 🤝`);} render(); });
+  });
+  const rv=$('#reveal'); if(rv) rv.onclick=reveal;
+  const nx=$('#next'); if(nx) nx.onclick=()=>{ if(S.qi+1<S.questions.length){ S.qi++; newQuestion(); } else { clearInterval(S.timerId); S.screen='end'; sfx.win(); render(); } };
+}
+function reveal(){
+  const q=S.questions[S.qi], rightIdx=q.shown.indexOf(q.right);
+  S.revealed=true; clearInterval(S.timerId); sfx.reveal();
+  let stones=0;
+  S.teams.forEach((t,i)=>{
+    if (S.answers[i]===rightIdx){
+      t.score += 100; t.correct++; stones++;
+      const h=S.helps[i];
+      if (h!==undefined){ S.teams[h].score += 50; S.teams[h].kind++; }
+    }
+  });
+  const before=S.bricks; S.bricks += stones;
+  if (stones) setTimeout(sfx.brick, 350);
+  if (before < S.goal && S.bricks >= S.goal) setTimeout(()=>{ sfx.win(); toast('🏛 The class finished the Temple of Olympus!'); }, 700);
+  else toast(stones ? `+${stones} stone${stones>1?'s':''} for the temple` : 'No stones this time. Help each other next round!');
+  render();
+}
+function renderEnd(){
+  const rank=[...S.teams].sort((a,b)=>b.score-a.score);
+  const kind=[...S.teams].sort((a,b)=>b.kind-a.kind)[0];
+  const built=S.bricks>=S.goal;
+  const order=[rank[1],rank[0],rank[2]].filter(Boolean), hts={0:150,1:110,2:80};
+  app.innerHTML=`
+  <div class="card" style="text-align:center">
+    <div class="big">${built?'🏛 Olympus is complete!':'🏗 The temple stands '+Math.round(S.bricks/S.goal*100)+'% high'}</div>
+    <p>${built?'The whole class built it together. Every team helped.':'Play again to finish it: helping other teams is the fastest way to build.'}</p>
+    <div style="max-width:520px;margin:0 auto">${templeSVG()}</div>
+    <div class="podium">${order.map(t=>`<div style="height:${hts[rank.indexOf(t)]}px;background:${t.col}">${rank.indexOf(t)+1}. ${esc(t.name)}<br>${t.score} pts</div>`).join('')}</div>
+    ${kind && kind.kind>0?`<p style="font-size:20px">⭐ Kindness award: <b>${esc(kind.name)}</b> (helped ${kind.kind} time${kind.kind>1?'s':''})</p>`:''}
+    <p class="small">${S.teams.map(t=>`${esc(t.name)}: ${t.correct}/${S.questions.length} correct`).join(' · ')}</p>
+    <div class="row" style="justify-content:center"><button id="again">Play again</button><button class="ghost" id="home2">Change teams or questions</button></div>
+  </div>`;
+  $('#again').onclick=startGame; $('#home2').onclick=()=>{S.screen='setup';render();};
+}
+
+// ---------------- printable answer cards ----------------
+$('#cards').innerHTML = LET.map((L,i)=>`<div class="pc ${L}">${L}</div>`).join('');
+$('#btnCards').onclick = () => window.print();
+$('#btnHome').onclick = () => { clearInterval(S.timerId); S.screen='setup'; render(); };
+document.addEventListener('keydown', e => {
+  if (S.screen!=='play' || e.target.tagName==='INPUT' || e.target.tagName==='TEXTAREA') return;
+  if (e.key==='Enter' || e.key===' '){ e.preventDefault(); (S.revealed ? $('#next') : $('#reveal'))?.click(); }
+});
+render();
+// #demo opens a game in progress (used for screenshots)
+const H = location.hash;
+if (['#demo','#reveal','#help'].includes(H)){ startGame(); S.qi = 6; S.bricks = 11; S.teams.forEach((t,i)=>{ t.score = [700,600,800,500][i]||0; t.kind = i===2?1:0; });
+  const q=S.questions[6], r=q.shown.indexOf(q.right); S.answers={0:r,1:r,2:r,3:(r+1)%4}; S.helps={1:2}; S.teams[1].helpUsed=true; clearInterval(S.timerId); S.left=12; render();
+  if (H==='#reveal') reveal();
+  if (H==='#help'){ S.answers={}; S.helps={}; S.teams[1].helpUsed=false; render(); document.querySelector('[data-help="1"]').click(); } }
+if (H==='#end'){ startGame(); clearInterval(S.timerId);
+  S.questions.forEach((q,k)=>{ const r=q.shown.indexOf(q.right); S.teams.forEach((t,i)=>{ if ((k+i)%5) { t.score+=100; t.correct++; S.bricks++; } }); });
+  S.teams[2].kind=2; S.teams[2].score+=100; S.screen='end'; render(); }
+</script>
+</body>
+</html>
