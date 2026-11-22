@@ -20,7 +20,7 @@ Open `index.html` in any browser. No install, no server, no accounts, no student
 One HTML file: plain JavaScript, CSS, SVG (temple), Web Audio API (sounds), print CSS (answer cards).
 
 ## AI use
-The idea and design are mine (Apjok Gergő, 14, Hungary). The code was written with the help of Claude (Anthropic), following my design.
+The core idea is mine (Apjok Gergő, 14, Hungary), from my app-idea notes. Claude (an AI agent by Anthropic) proposed the cooperative features, designed and wrote the code and wrote the quiz questions at my request. I reviewed the submission.
 
 ## License
 MIT
